@@ -109,6 +109,11 @@ async fn main() {
 			frontend::settings::restore_config_directory,
 			virtual_deck::virtual_deck_get_state,
 			virtual_deck::virtual_deck_press,
+			virtual_deck::virtual_deck_get_config,
+			virtual_deck::virtual_deck_set_config,
+			virtual_deck::virtual_deck_list_monitors,
+			virtual_deck::virtual_deck_set_visible,
+			virtual_deck::virtual_deck_set_always_on_top,
 		])
 		.setup(|app| {
 			APP_HANDLE.set(app.handle().clone()).unwrap();
@@ -217,13 +222,7 @@ If you have already donated, thank you so much for your support!"#,
 			device_sleep::init_device_sleep();
 			power_events::init_power_events();
 
-			let virtual_deck_config = virtual_deck::load_config();
-			if virtual_deck_config.enabled {
-				if let Err(error) = virtual_deck::create_window(app.handle(), &virtual_deck_config) {
-					log::error!("Failed to create virtual deck window: {error}");
-				}
-				tokio::spawn(async move { virtual_deck::register(&virtual_deck_config).await });
-			}
+			virtual_deck::init(app.handle());
 
 			let label = IconMenuItemBuilder::with_id("label", PRODUCT_NAME)
 				.icon(app.default_window_icon().unwrap().clone())
@@ -231,10 +230,11 @@ If you have already donated, thank you so much for your support!"#,
 				.build(app)?;
 			let show = MenuItemBuilder::with_id("show", "Show").build(app)?;
 			let hide = MenuItemBuilder::with_id("hide", "Hide").build(app)?;
+			let virtual_deck = MenuItemBuilder::with_id("virtual_deck", "Show/hide virtual deck").build(app)?;
 			let restart = MenuItemBuilder::with_id("restart", "Restart").build(app)?;
 			let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
 			let separator = PredefinedMenuItem::separator(app)?;
-			let menu = MenuBuilder::new(app).items(&[&label, &separator, &show, &hide, &separator, &restart, &quit]).build()?;
+			let menu = MenuBuilder::new(app).items(&[&label, &separator, &show, &hide, &virtual_deck, &separator, &restart, &quit]).build()?;
 			let _tray = TrayIconBuilder::with_id("opendeck")
 				.menu(&menu)
 				.icon(app.default_window_icon().unwrap().clone())
@@ -254,6 +254,7 @@ If you have already donated, thank you so much for your support!"#,
 					let _ = match event.id().as_ref() {
 						"show" => show_window(app),
 						"hide" => hide_window(app),
+						"virtual_deck" => virtual_deck::toggle_visible(app),
 						"restart" => shared::restart(app),
 						"quit" => {
 							app.exit(0);
