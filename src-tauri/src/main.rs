@@ -119,11 +119,11 @@ async fn main() {
 			APP_HANDLE.set(app.handle().clone()).unwrap();
 
 			#[cfg(windows)]
-			if !std::env::args().any(|v| v == "--hide") {
+			if !std::env::args().any(|v| v == "--hide") && !virtual_deck::start_in_tray() {
 				let _ = app.get_webview_window("main").unwrap().show();
 			}
 			#[cfg(not(windows))]
-			if std::env::args().any(|v| v == "--hide") {
+			if std::env::args().any(|v| v == "--hide") || virtual_deck::start_in_tray() {
 				let _ = hide_window(app.handle());
 			}
 

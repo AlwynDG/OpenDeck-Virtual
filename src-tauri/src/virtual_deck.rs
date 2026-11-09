@@ -36,6 +36,14 @@ pub enum Mode {
 	Monitor,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Toolbar {
+	Always,
+	Hover,
+	Never,
+}
+
 /// Window position and size in physical pixels.
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Geometry {
@@ -66,6 +74,10 @@ pub struct VirtualDeckConfig {
 	pub visible: bool,
 	/// Opacity of the window background behind the keys, 0-100. 0 = fully transparent: only the keys float on the desktop.
 	pub background_opacity: u8,
+	/// Drag bar of the floating window. The window can always be dragged by the space between the keys.
+	pub toolbar: Toolbar,
+	/// Start OpenDeck's own window hidden in the tray; the deck is what you use day to day.
+	pub start_in_tray: bool,
 }
 
 impl Default for VirtualDeckConfig {
@@ -81,6 +93,8 @@ impl Default for VirtualDeckConfig {
 			floating: None,
 			visible: true,
 			background_opacity: 0,
+			toolbar: Toolbar::Never,
+			start_in_tray: true,
 		}
 	}
 }
@@ -135,6 +149,12 @@ static CONFIG: LazyLock<RwLock<VirtualDeckConfig>> = LazyLock::new(|| RwLock::ne
 
 fn config() -> VirtualDeckConfig {
 	CONFIG.read().unwrap().clone()
+}
+
+/// Whether OpenDeck's main window should start hidden in the tray. Call after `APP_HANDLE` is set.
+pub fn start_in_tray() -> bool {
+	let config = config();
+	config.enabled && config.start_in_tray
 }
 
 pub fn is_virtual(device: &str) -> bool {
@@ -241,6 +261,7 @@ pub struct VirtualDeckState {
 	mode: Mode,
 	always_on_top: bool,
 	background_opacity: u8,
+	toolbar: Toolbar,
 	sleeping: bool,
 	images: HashMap<u8, String>,
 }
@@ -254,6 +275,7 @@ fn state() -> VirtualDeckState {
 		mode: config.mode,
 		always_on_top: config.always_on_top,
 		background_opacity: config.background_opacity,
+		toolbar: config.toolbar,
 		sleeping: SLEEPING.load(Ordering::SeqCst),
 		images: shown_images(),
 	}
@@ -491,7 +513,8 @@ fn floating_geometry(app: &AppHandle, config: &VirtualDeckConfig) -> Option<Geom
 	let scale = monitor.scale_factor();
 	let gap = config.gap as f64;
 	let width = config.columns as f64 * DEFAULT_KEY_SIZE + (config.columns as f64 + 1.0) * gap;
-	let height = config.rows as f64 * DEFAULT_KEY_SIZE + (config.rows as f64 + 1.0) * gap + TOOLBAR_HEIGHT;
+	let toolbar = if config.toolbar == Toolbar::Never { 0.0 } else { TOOLBAR_HEIGHT };
+	let height = config.rows as f64 * DEFAULT_KEY_SIZE + (config.rows as f64 + 1.0) * gap + toolbar;
 	// Never larger than 90% of the monitor.
 	let factor = (monitor.size().width as f64 * 0.9 / (width * scale))
 		.min(monitor.size().height as f64 * 0.9 / (height * scale))
@@ -599,6 +622,14 @@ fn create_window(app: &AppHandle, config: &VirtualDeckConfig) -> Result<(), taur
 	});
 
 	window.show()?;
+	// GTK lays out a webview that was sized while hidden at 0x0; size it again now that it is mapped.
+	#[cfg(target_os = "linux")]
+	{
+		PLACING.store(true, Ordering::SeqCst);
+		let placed = place_window(app, &window, config);
+		PLACING.store(false, Ordering::SeqCst);
+		placed?;
+	}
 	Ok(())
 }
 

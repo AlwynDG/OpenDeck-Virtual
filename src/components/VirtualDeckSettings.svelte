@@ -16,6 +16,8 @@
 		floating: Geometry | null;
 		visible: boolean;
 		background_opacity: number;
+		toolbar: "always" | "hover" | "never";
+		start_in_tray: boolean;
 	};
 	type MonitorInfo = { name: string; width: number; height: number; x: number; y: number };
 
@@ -105,6 +107,26 @@
 				<label for="vd-background_opacity" class="text-neutral-400">Background</label>
 				<input type="range" min="0" max="100" bind:value={config.background_opacity} id="vd-background_opacity" />
 				<span class="text-neutral-400 w-24">{config.background_opacity == 0 ? "transparent" : `${config.background_opacity}%`}</span>
+			</div>
+
+			{#if config.mode == "floating"}
+				<div class="flex flex-row items-center my-2 space-x-2">
+					<label for="vd-toolbar" class="text-neutral-400">Drag bar</label>
+					<div class="select-wrapper">
+						<select bind:value={config.toolbar} class="w-auto pr-10!" id="vd-toolbar">
+							<option value="never">Never (just the keys)</option>
+							<option value="hover">When the mouse is over the deck</option>
+							<option value="always">Always</option>
+						</select>
+					</div>
+				</div>
+				<p class="-mt-1 mb-2 text-xs text-neutral-500">Move the deck by dragging the space between the keys; resize it from the bottom-right corner.</p>
+			{/if}
+
+			<div class="flex flex-row items-center my-2 space-x-2">
+				<label for="vd-start_in_tray" class="text-neutral-400">Start OpenDeck in the tray</label>
+				<input type="checkbox" bind:checked={config.start_in_tray} id="vd-start_in_tray" />
+				<span class="text-xs text-neutral-500">only the deck appears; open this window from the tray icon</span>
 			</div>
 
 			<div class="flex flex-row items-center my-2 space-x-2">

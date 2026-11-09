@@ -51,17 +51,19 @@ A is gekozen omdat het venster dan dezelfde rendering (`Key.svelte`) kan hergebr
 In OpenDeck: **Settings → Virtual Stream Deck**, daarna **Apply**. Geen herstart nodig.
 Ze staan in `%APPDATA%\opendeck\virtual_deck.json`.
 
-| Instelling    | Betekenis                                                                                                                                                                                                                                   |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Window        | **Floating**: los venster dat je overal neerzet, verplaatst (sleepbalk bovenaan) en vergroot (hoekje rechtsonder), zoals Elgato's Virtual Stream Deck. Positie en grootte worden onthouden. **Fill a whole monitor**: vult een heel scherm. |
-| Monitor       | Alleen bij "Fill a whole monitor". Automatisch = meest rechtse staande scherm.                                                                                                                                                              |
-| Keys          | Kolommen × rijen. Let op: acties staan op volgorde, dus anders indelen verschuift ze; acties die niet meer passen verdwijnen.                                                                                                               |
-| Gap           | Ruimte tussen de knoppen.                                                                                                                                                                                                                   |
-| Background    | 0 = doorzichtig (alleen de knoppen zweven op je bureaublad), 100 = zwart.                                                                                                                                                                   |
-| Always on top | Boven andere vensters blijven. Ook te wisselen met de punaise in de sleepbalk.                                                                                                                                                              |
+| Instelling                 | Betekenis                                                                                                                                                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Window                     | **Floating**: los venster dat je overal neerzet, verplaatst (sleepbalk bovenaan) en vergroot (hoekje rechtsonder), zoals Elgato's Virtual Stream Deck. Positie en grootte worden onthouden. **Fill a whole monitor**: vult een heel scherm. |
+| Monitor                    | Alleen bij "Fill a whole monitor". Automatisch = meest rechtse staande scherm.                                                                                                                                                              |
+| Keys                       | Kolommen × rijen. Let op: acties staan op volgorde, dus anders indelen verschuift ze; acties die niet meer passen verdwijnen.                                                                                                               |
+| Gap                        | Ruimte tussen de knoppen.                                                                                                                                                                                                                   |
+| Background                 | 0 = doorzichtig (alleen de knoppen zweven op je bureaublad), 100 = zwart.                                                                                                                                                                   |
+| Drag bar                   | Alleen bij Floating. **Never** (standaard): alleen de knoppen. **On hover**: verschijnt als je muis over de deck is. **Always**: altijd zichtbaar. Verplaatsen kan altijd door de ruimte tussen de knoppen vast te pakken.                  |
+| Start OpenDeck in the tray | Standaard aan: bij opstarten verschijnt alleen de deck; het OpenDeck-venster open je via het tray-icoon.                                                                                                                                    |
+| Always on top              | Boven andere vensters blijven. Ook te wisselen met de punaise in de sleepbalk.                                                                                                                                                              |
 
-- Verbergen: oog-knop in de sleepbalk. Terugzetten: tray-icoon → **Show/hide virtual deck**.
-- Bij een doorzichtige achtergrond verschijnen sleepbalk en vergroot-hoekje pas als je met de muis over de deck gaat.
+- Verbergen: oog-knop in de sleepbalk (als die aan staat). Terugzetten: tray-icoon → **Show/hide virtual deck**.
+- Het vergroot-hoekje rechtsonder verschijnt als je met de muis over de deck gaat.
 - Het venster neemt nooit focus, zodat sneltoetsen naar de app gaan die je gebruikt en niet naar de deck.
 - Slaapstand-instellingen van OpenDeck gelden ook voor de deck: in slaap = donker, eerste klik maakt hem wakker.
 - Na een schermwissel of slaapstand zet de deck zichzelf binnen een paar seconden terug op zijn plek.
