@@ -656,9 +656,12 @@ async fn watch_monitors() {
 		};
 		let misplaced = match config.mode {
 			Mode::Monitor => current != target,
-			// A floating window is only moved when it ended up off-screen; `floating_geometry` already falls back to
-			// a fresh position in that case, so any difference from the remembered geometry means that happened.
-			Mode::Floating => Some(target) != config.floating,
+			// A floating window stays wherever the user put it; it is only moved back when it is no longer on any
+			// connected monitor (e.g. the monitor it was on was unplugged).
+			Mode::Floating => {
+				let (cx, cy) = (current.x + current.width as i32 / 2, current.y + 16);
+				!app.available_monitors().unwrap_or_default().iter().any(|m| rect_contains(m, cx, cy))
+			}
 		};
 		if misplaced {
 			log::info!("Repositioning virtual deck window");
