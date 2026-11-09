@@ -10,6 +10,7 @@ mod plugins;
 mod power_events;
 mod shared;
 mod store;
+mod virtual_deck;
 mod zip_extract;
 
 mod built_info {
@@ -106,6 +107,8 @@ async fn main() {
 			frontend::settings::get_build_info,
 			frontend::settings::backup_config_directory,
 			frontend::settings::restore_config_directory,
+			virtual_deck::virtual_deck_get_state,
+			virtual_deck::virtual_deck_press,
 		])
 		.setup(|app| {
 			APP_HANDLE.set(app.handle().clone()).unwrap();
@@ -213,6 +216,14 @@ If you have already donated, thank you so much for your support!"#,
 			application_watcher::init_application_watcher();
 			device_sleep::init_device_sleep();
 			power_events::init_power_events();
+
+			let virtual_deck_config = virtual_deck::load_config();
+			if virtual_deck_config.enabled {
+				if let Err(error) = virtual_deck::create_window(app.handle(), &virtual_deck_config) {
+					log::error!("Failed to create virtual deck window: {error}");
+				}
+				tokio::spawn(async move { virtual_deck::register(&virtual_deck_config).await });
+			}
 
 			let label = IconMenuItemBuilder::with_id("label", PRODUCT_NAME)
 				.icon(app.default_window_icon().unwrap().clone())

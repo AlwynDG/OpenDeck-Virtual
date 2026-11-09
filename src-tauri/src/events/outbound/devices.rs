@@ -68,6 +68,8 @@ pub async fn update_image(context: crate::shared::Context, image: Option<String>
 		.await?;
 	} else if context.device.starts_with("sd-") {
 		crate::elgato::update_image(&context, image.as_deref()).await?;
+	} else if crate::virtual_deck::is_virtual(&context.device) {
+		crate::virtual_deck::update_image(&context, image.as_deref());
 	}
 
 	Ok(())
@@ -101,6 +103,8 @@ pub async fn clear_screen(device: String) -> Result<(), anyhow::Error> {
 		.await?;
 	} else if device.starts_with("sd-") {
 		crate::elgato::clear_screen(&device).await?;
+	} else if crate::virtual_deck::is_virtual(&device) {
+		crate::virtual_deck::clear_screen();
 	}
 
 	Ok(())

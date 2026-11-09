@@ -4,13 +4,13 @@ Opgemeten op 9 november 2026. Dit is de enige machine waarop de virtuele deck ec
 
 ## Hardware
 
-| Onderdeel | Waarde |
-|---|---|
-| OS | Windows 11 Pro (build 26300) |
-| CPU | AMD Ryzen 9 9950X3D (16 cores) |
-| RAM | 32 GB |
-| GPU | NVIDIA GeForce RTX 4080 SUPER (+ AMD Radeon iGPU, geen scherm op aangesloten) |
-| Fysieke Stream Deck | **Geen** — er is geen Elgato-apparaat via USB aangesloten |
+| Onderdeel           | Waarde                                                                        |
+| ------------------- | ----------------------------------------------------------------------------- |
+| OS                  | Windows 11 Pro (build 26300)                                                  |
+| CPU                 | AMD Ryzen 9 9950X3D (16 cores)                                                |
+| RAM                 | 32 GB                                                                         |
+| GPU                 | NVIDIA GeForce RTX 4080 SUPER (+ AMD Radeon iGPU, geen scherm op aangesloten) |
+| Fysieke Stream Deck | **Geen** — er is geen Elgato-apparaat via USB aangesloten                     |
 
 ## Schermopstelling (belangrijk!)
 
@@ -32,11 +32,11 @@ Coördinaten in fysieke pixels (DPI-aware gemeten), ten opzichte van het hoofdsc
                                                       └────────┘
 ```
 
-| Scherm | Model | Resolutie | Positie (x, y) | Rol |
-|---|---|---|---|---|
-| DISPLAY1 | Alienware AW3423DWF | 3440×1440 | 0, 0 | Hoofdscherm |
-| DISPLAY2 | iiyama PL2466H | 1920×1080 | 795, -1080 | Boven het hoofdscherm |
-| **DISPLAY3** | **iiyama PL2466H** | **1080×1920 (portret)** | **3440, -251** | **Doelscherm virtuele deck** |
+| Scherm       | Model               | Resolutie               | Positie (x, y) | Rol                          |
+| ------------ | ------------------- | ----------------------- | -------------- | ---------------------------- |
+| DISPLAY1     | Alienware AW3423DWF | 3440×1440               | 0, 0           | Hoofdscherm                  |
+| DISPLAY2     | iiyama PL2466H      | 1920×1080               | 795, -1080     | Boven het hoofdscherm        |
+| **DISPLAY3** | **iiyama PL2466H**  | **1080×1920 (portret)** | **3440, -251** | **Doelscherm virtuele deck** |
 
 Aandachtspunten:
 
@@ -55,16 +55,16 @@ Aandachtspunten:
 
 ## Software
 
-| Software | Status |
-|---|---|
-| Elgato Stream Deck | 7.5.1 geïnstalleerd en draait (`StreamDeck.exe`), maar werkt niet naar wens → wordt vervangen door deze fork. Sluit hem af tijdens testen om conflicten te voorkomen. |
-| OBS Studio | 32.1.2 — belangrijke doelapp voor knoppen |
-| Microsoft Edge WebView2 Runtime | 157 — aanwezig (nodig voor Tauri) |
-| Visual Studio Code | aanwezig |
-| Python | 3.14 |
-| Git / GitHub CLI | 2.55 / `gh` 2.103, ingelogd als `AlwynDG` |
-| OpenDeck | nog **niet** geïnstalleerd |
-| Rust, Deno, Node.js, VS C++ Build Tools | nog **niet** geïnstalleerd — nodig om te bouwen |
+| Software                                | Status                                                                                                                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Elgato Stream Deck                      | 7.5.1 geïnstalleerd en draait (`StreamDeck.exe`), maar werkt niet naar wens → wordt vervangen door deze fork. Sluit hem af tijdens testen om conflicten te voorkomen. |
+| OBS Studio                              | 32.1.2 — belangrijke doelapp voor knoppen                                                                                                                             |
+| Microsoft Edge WebView2 Runtime         | 157 — aanwezig (nodig voor Tauri)                                                                                                                                     |
+| Visual Studio Code                      | aanwezig                                                                                                                                                              |
+| Python                                  | 3.14                                                                                                                                                                  |
+| Git / GitHub CLI                        | 2.55 / `gh` 2.103, ingelogd als `AlwynDG`                                                                                                                             |
+| OpenDeck                                | nog **niet** geïnstalleerd                                                                                                                                            |
+| Rust, Deno, Node.js, VS C++ Build Tools | nog **niet** geïnstalleerd — nodig om te bouwen                                                                                                                       |
 
 ## Bouwomgeving opzetten op Windows
 

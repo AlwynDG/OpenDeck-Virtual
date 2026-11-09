@@ -188,7 +188,7 @@
 							on:drop={(event) => handleDrop(event, "Keypad", r * device.columns + c)}
 							on:dragstart={(event) => handleDragStart(event, "Keypad", r * device.columns + c)}
 							{handlePaste}
-							size={device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144}
+							size={device.id.startsWith("vd-") ? 288 : device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144}
 							label="{$t('device_view.key')} {String.fromCharCode(65 + r)}{c + 1}"
 							tabindex={focusedRow === r && focusedCol === c ? 0 : -1}
 						/>
@@ -206,7 +206,7 @@
 					on:drop={(event) => handleDrop(event, "Encoder", i)}
 					on:dragstart={(event) => handleDragStart(event, "Encoder", i)}
 					{handlePaste}
-					size={device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144}
+					size={device.id.startsWith("vd-") ? 288 : device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144}
 					label="{$t('device_view.encoder')} {i + 1}"
 					tabindex={focusedRow === encoderRowIndex && focusedCol === i ? 0 : -1}
 				/>
@@ -226,7 +226,7 @@
 								on:drop={(event) => handleDrop(event, "Infobar", j)}
 								on:dragstart={(event) => handleDragStart(event, "Infobar", j)}
 								{handlePaste}
-								size={device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144}
+								size={device.id.startsWith("vd-") ? 288 : device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144}
 								width={248}
 								height={58}
 							/>
@@ -240,7 +240,7 @@
 					on:drop={(event) => handleDrop(event, "Keypad", device.rows * device.columns + i)}
 					on:dragstart={(event) => handleDragStart(event, "Keypad", device.rows * device.columns + i)}
 					{handlePaste}
-					size={device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144}
+					size={device.id.startsWith("vd-") ? 288 : device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144}
 					isTouchPoint
 					label="{$t('device_view.touchpoint')} {i + 1}"
 					tabindex={focusedRow === touchpointRowIndex && focusedCol === i ? 0 : -1}
