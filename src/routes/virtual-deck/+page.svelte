@@ -39,8 +39,7 @@
 	let height = 0;
 
 	$: showToolbar = floating && toolbar != "never";
-	$: gridHeight = height - (showToolbar ? TOOLBAR_HEIGHT : 0);
-	$: keySize = rows && columns ? Math.max(0, Math.floor(Math.min((width - gap * (columns + 1)) / columns, (gridHeight - gap * (rows + 1)) / rows))) : 0;
+	$: keySize = rows && columns ? Math.max(0, Math.floor(Math.min((width - gap * (columns + 1)) / columns, (height - gap * (rows + 1)) / rows))) : 0;
 
 	function toImages(record: Record<string, string>): Record<number, string> {
 		return Object.fromEntries(Object.entries(record).map(([k, v]) => [Number(k), v]));
@@ -109,7 +108,7 @@
 	}
 </script>
 
-<svelte:window bind:innerWidth={width} bind:innerHeight={height} on:contextmenu|preventDefault />
+<svelte:window on:contextmenu|preventDefault />
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
@@ -147,7 +146,13 @@
 
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<!-- Floating: grab the space between the keys to move the window. -->
-	<div class="relative grow flex items-center justify-center" on:pointerdown={(event) => floating && startDrag(event)}>
+	<!-- Measured with a ResizeObserver (bind:client*): the window size at load can be 0 before the webview is laid out. -->
+	<div
+		class="relative grow min-h-0 flex items-center justify-center"
+		bind:clientWidth={width}
+		bind:clientHeight={height}
+		on:pointerdown={(event) => floating && startDrag(event)}
+	>
 		<div class="grid" style={`grid-template-columns: repeat(${columns}, ${keySize}px); gap: ${gap}px;`}>
 			{#each { length: rows * columns } as _, i}
 				<button
