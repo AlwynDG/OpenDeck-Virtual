@@ -3,10 +3,14 @@
 ## Eenmalig
 
 ```bash
-git clone https://github.com/AlwynDG/OpenDeck-Virtual.git
+git -c core.autocrlf=false clone https://github.com/AlwynDG/OpenDeck-Virtual.git
 cd OpenDeck-Virtual
+git config core.autocrlf false
 git remote add upstream https://github.com/nekename/OpenDeck.git
 ```
+
+`core.autocrlf false` is belangrijk op Windows: de repo gebruikt LF-regeleinden en `deno task format` schrijft LF.
+Met de Windows-standaard (`true`) lijkt anders ineens elk bestand gewijzigd.
 
 Installeer de bouwomgeving (zie [SYSTEEM.md](SYSTEEM.md#bouwomgeving-opzetten-op-windows)) en draai `deno install`.
 

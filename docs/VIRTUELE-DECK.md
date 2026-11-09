@@ -21,11 +21,11 @@ Alle bestaande OpenDeck-functies (profielen, multi-actions, Elgato-plugins, OBS-
 
 Twee opties overwogen:
 
-| | A. Ingebouwd in fork (gekozen) | B. Losse device-plugin |
-|---|---|---|
+|                           | A. Ingebouwd in fork (gekozen)           | B. Losse device-plugin                 |
+| ------------------------- | ---------------------------------------- | -------------------------------------- |
 | Venster op rechter scherm | Tweede Tauri-venster, volledige controle | Plugin moet zelf een venster/app maken |
-| Beelden | Direct uit `update_image` | Via WebSocket-events |
-| Upstream mergen | Iets meer werk | Geen fork nodig |
+| Beelden                   | Direct uit `update_image`                | Via WebSocket-events                   |
+| Upstream mergen           | Iets meer werk                           | Geen fork nodig                        |
 
 A is gekozen omdat het venster dan dezelfde rendering (`Key.svelte`) kan hergebruiken en alles in één app blijft.
 
@@ -44,12 +44,35 @@ A is gekozen omdat het venster dan dezelfde rendering (`Key.svelte`) kan hergebr
 4. **Frontend-route `src/routes/virtual-deck/+page.svelte`** (nieuw): toont alleen het grid op zwarte achtergrond,
    `pointerdown`/`pointerup` → `virtual_deck_press`. Geen editor-UI; bewerken blijft in het hoofdvenster.
 5. **Instellingen** (in `SettingsView.svelte`): aan/uit, rijen, kolommen, knopafstand, welk scherm, altijd-op-voorgrond.
+   Voorlopig via het bestand hieronder.
+
+## Configuratie (`%APPDATA%\opendeck\virtual_deck.json`)
+
+Wordt bij de eerste start aangemaakt. Na wijzigen OpenDeck herstarten.
+
+```json
+{
+	"enabled": true,
+	"rows": 8,
+	"columns": 5,
+	"gap": 16,
+	"monitor": null,
+	"always_on_top": true,
+	"windowed": false
+}
+```
+
+- `monitor`: `null` = automatisch (meest rechtse staande scherm), of een naam zoals `"\\\\.\\DISPLAY3"` (staat in de log bij opstarten).
+- `windowed: true` = testmodus in een gewoon venster van 540×960 (handig voor Jeremy).
+- Het venster kan niet focussen (in fullscreen-modus), zodat sneltoetsen naar de app gaan die je gebruikt en niet naar de deck.
+- Let op: andere `rows`/`columns` = ander aantal knopposities in je profiel.
 
 ## Roadmap
 
-- [ ] Bouwomgeving werkend op Windows (`deno task tauri dev` start)
-- [ ] Virtueel device registreren → verschijnt in de device-dropdown, knoppen toewijzen werkt
-- [ ] Venster `virtual-deck` op het portretscherm, grid tekenen
+- [x] Bouwomgeving werkend op Windows (`deno task tauri dev` start)
+- [x] Virtueel device registreren (`vd-virtual-1`, profiel wordt aangemaakt)
+- [x] Venster `virtual-deck` op het portretscherm, grid tekenen (getest op DISPLAY3, 5×8)
+- [ ] Knoppen toewijzen in hoofdvenster en controleren dat ze op de deck verschijnen
 - [ ] Klikken triggert acties (testen met starterpack-acties, bijv. "Run Command")
 - [ ] Beelden/titels van plugins live bijwerken (`setImage`, `setTitle`, states)
 - [ ] Instellingen voor grid-grootte en scherm
