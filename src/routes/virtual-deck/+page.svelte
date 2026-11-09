@@ -10,6 +10,8 @@
 	import PushPin from "phosphor-svelte/lib/PushPin";
 	import VirtualDeckKey from "../../components/VirtualDeckKey.svelte";
 
+	import { initPortBase } from "$lib/ports";
+
 	import { invoke } from "@tauri-apps/api/core";
 	import { listen } from "@tauri-apps/api/event";
 	import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -113,6 +115,14 @@
 			applyState(state);
 			loadProfile();
 		});
+		// Plugin images are served by OpenDeck's webserver, whose port is only known after asking the backend.
+		// Reload the profile once it is known so keys drawn with the default port are redrawn.
+		initPortBase()
+			.then(() => {
+				profileJson = "";
+				loadProfile();
+			})
+			.catch((error) => console.error(error));
 		// Pick up edits made in the main window (adding, moving or removing actions).
 		const poll = setInterval(loadProfile, 1500);
 		// bind:client* uses a ResizeObserver, which WebKitGTK does not run for a window it considers hidden (e.g. never
@@ -163,7 +173,7 @@
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
 	class="fixed inset-0 flex flex-col select-none overflow-hidden"
-	style={`touch-action: none; background: rgb(0 0 0 / ${backgroundOpacity}%);`}
+	style={`touch-action: none; background: rgb(0 0 0 / ${floating ? backgroundOpacity : 100}%);`}
 	on:pointerenter={() => (hovering = true)}
 	on:pointerleave={() => (hovering = false)}
 >

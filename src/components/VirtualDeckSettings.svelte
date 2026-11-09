@@ -2,6 +2,7 @@
 	// Settings for the virtual Stream Deck (OpenDeck-Virtual fork). Kept in its own component so SettingsView.svelte
 	// stays close to upstream.
 	import { invoke } from "@tauri-apps/api/core";
+	import { ask } from "@tauri-apps/plugin-dialog";
 	import { onMount } from "svelte";
 
 	type Geometry = { x: number; y: number; width: number; height: number };
@@ -37,6 +38,15 @@
 	async function apply() {
 		if (!config) return;
 		error = "";
+		const old = JSON.parse(saved) as VirtualDeckConfig;
+		if (config.rows * config.columns < old.rows * old.columns) {
+			const removed = old.rows * old.columns - config.rows * config.columns;
+			const confirmed = await ask(`The deck gets ${removed} fewer keys. Actions on keys that no longer fit are removed from your profiles. Continue?`, {
+				title: "Fewer keys",
+				kind: "warning",
+			});
+			if (!confirmed) return;
+		}
 		try {
 			await invoke("virtual_deck_set_config", { newConfig: config });
 			await load();
@@ -103,13 +113,14 @@
 				<span class="text-neutral-400 w-10">{config.gap}px</span>
 			</div>
 
-			<div class="flex flex-row items-center my-2 space-x-2">
-				<label for="vd-background_opacity" class="text-neutral-400">Background</label>
-				<input type="range" min="0" max="100" bind:value={config.background_opacity} id="vd-background_opacity" />
-				<span class="text-neutral-400 w-24">{config.background_opacity == 0 ? "transparent" : `${config.background_opacity}%`}</span>
-			</div>
-
 			{#if config.mode == "floating"}
+				<!-- Floating only: a transparent window still catches clicks, so a transparent full-monitor deck would block the whole monitor. -->
+				<div class="flex flex-row items-center my-2 space-x-2">
+					<label for="vd-background_opacity" class="text-neutral-400">Background</label>
+					<input type="range" min="0" max="100" bind:value={config.background_opacity} id="vd-background_opacity" />
+					<span class="text-neutral-400 w-24">{config.background_opacity == 0 ? "transparent" : `${config.background_opacity}%`}</span>
+				</div>
+
 				<div class="flex flex-row items-center my-2 space-x-2">
 					<label for="vd-toolbar" class="text-neutral-400">Drag bar</label>
 					<div class="select-wrapper">
