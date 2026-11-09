@@ -144,6 +144,8 @@ pub async fn set_device_brightness(device: &str, brightness: u8) -> Result<(), a
 		.await?;
 	} else if device.starts_with("sd-") {
 		crate::elgato::set_brightness(device, brightness).await;
+	} else if crate::virtual_deck::is_virtual(device) {
+		crate::virtual_deck::set_brightness(brightness);
 	}
 
 	Ok(())

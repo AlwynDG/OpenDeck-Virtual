@@ -145,6 +145,9 @@ pub async fn key_up(device: &str, key: u8) -> Result<(), anyhow::Error> {
 		return Ok(());
 	};
 	if context != expected_context {
+		// The key was pressed on another profile than the one now shown (e.g. a profile switch button):
+		// release that key's pressed look too, or it stays shrunken when switching back.
+		let _ = key_moved(crate::APP_HANDLE.get().unwrap(), expected_context, false).await;
 		return Ok(());
 	}
 

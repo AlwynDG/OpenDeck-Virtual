@@ -7,6 +7,7 @@
 	import Star from "phosphor-svelte/lib/Star";
 	import Popup from "./Popup.svelte";
 	import Tooltip from "./Tooltip.svelte";
+	import VirtualDeckSettings from "./VirtualDeckSettings.svelte";
 
 	import { t } from "$lib/i18n";
 	import { settings } from "$lib/settings";
@@ -171,6 +172,8 @@
 			<input type="checkbox" bind:checked={$settings.disableelgato} id="settings-disableelgato" />
 			<Tooltip>{$t("settings.disableelgato.tooltip")}</Tooltip>
 		</div>
+
+		<VirtualDeckSettings />
 	{/if}
 
 	<div class="ml-2">

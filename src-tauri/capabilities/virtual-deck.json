@@ -1,0 +1,6 @@
+{
+	"identifier": "virtual-deck",
+	"local": true,
+	"windows": ["virtual-deck"],
+	"permissions": ["core:default", "core:window:allow-start-dragging", "core:window:allow-start-resize-dragging"]
+}

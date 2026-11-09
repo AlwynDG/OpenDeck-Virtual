@@ -46,26 +46,27 @@ A is gekozen omdat het venster dan dezelfde rendering (`Key.svelte`) kan hergebr
 5. **Instellingen** (in `SettingsView.svelte`): aan/uit, rijen, kolommen, knopafstand, welk scherm, altijd-op-voorgrond.
    Voorlopig via het bestand hieronder.
 
-## Configuratie (`%APPDATA%\opendeck\virtual_deck.json`)
+## Instellingen
 
-Wordt bij de eerste start aangemaakt. Na wijzigen OpenDeck herstarten.
+In OpenDeck: **Settings → Virtual Stream Deck**, daarna **Apply**. Geen herstart nodig.
+Ze staan in `%APPDATA%\opendeck\virtual_deck.json`.
 
-```json
-{
-	"enabled": true,
-	"rows": 8,
-	"columns": 5,
-	"gap": 16,
-	"monitor": null,
-	"always_on_top": true,
-	"windowed": false
-}
-```
+| Instelling                 | Betekenis                                                                                                                                                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Window                     | **Floating**: los venster dat je overal neerzet, verplaatst (sleepbalk bovenaan) en vergroot (hoekje rechtsonder), zoals Elgato's Virtual Stream Deck. Positie en grootte worden onthouden. **Fill a whole monitor**: vult een heel scherm. |
+| Monitor                    | Alleen bij "Fill a whole monitor". Automatisch = meest rechtse staande scherm.                                                                                                                                                              |
+| Keys                       | Kolommen × rijen. Let op: acties staan op volgorde, dus anders indelen verschuift ze; acties die niet meer passen verdwijnen.                                                                                                               |
+| Gap                        | Ruimte tussen de knoppen.                                                                                                                                                                                                                   |
+| Background                 | 0 = doorzichtig (alleen de knoppen zweven op je bureaublad), 100 = zwart.                                                                                                                                                                   |
+| Drag bar                   | Alleen bij Floating. **Never** (standaard): alleen de knoppen. **On hover**: verschijnt als je muis over de deck is. **Always**: altijd zichtbaar. Verplaatsen kan altijd door de ruimte tussen de knoppen vast te pakken.                  |
+| Start OpenDeck in the tray | Standaard aan: bij opstarten verschijnt alleen de deck; het OpenDeck-venster open je via het tray-icoon.                                                                                                                                    |
+| Always on top              | Boven andere vensters blijven. Ook te wisselen met de punaise in de sleepbalk.                                                                                                                                                              |
 
-- `monitor`: `null` = automatisch (meest rechtse staande scherm), of een naam zoals `"\\\\.\\DISPLAY3"` (staat in de log bij opstarten).
-- `windowed: true` = testmodus in een gewoon venster van 540×960 (handig voor Jeremy).
-- Het venster kan niet focussen (in fullscreen-modus), zodat sneltoetsen naar de app gaan die je gebruikt en niet naar de deck.
-- Let op: andere `rows`/`columns` = ander aantal knopposities in je profiel.
+- Verbergen: oog-knop in de sleepbalk (als die aan staat). Terugzetten: tray-icoon → **Show/hide virtual deck**.
+- Het vergroot-hoekje rechtsonder verschijnt als je met de muis over de deck gaat.
+- Het venster neemt nooit focus, zodat sneltoetsen naar de app gaan die je gebruikt en niet naar de deck.
+- Slaapstand-instellingen van OpenDeck gelden ook voor de deck: in slaap = donker, eerste klik maakt hem wakker.
+- Na een schermwissel of slaapstand zet de deck zichzelf binnen een paar seconden terug op zijn plek.
 
 ## Roadmap
 
@@ -75,8 +76,10 @@ Wordt bij de eerste start aangemaakt. Na wijzigen OpenDeck herstarten.
 - [ ] Knoppen toewijzen in hoofdvenster en controleren dat ze op de deck verschijnen
 - [ ] Klikken triggert acties (testen met starterpack-acties, bijv. "Run Command")
 - [ ] Beelden/titels van plugins live bijwerken (`setImage`, `setTitle`, states)
-- [ ] Instellingen voor grid-grootte en scherm
-- [ ] Automatisch starten met Windows, venster herstellen na schermwissel/slaapstand
+- [x] Instellingen voor grid-grootte en scherm (Settings → Virtual Stream Deck)
+- [x] Zwevend, verplaatsbaar venster met doorzichtige achtergrond
+- [x] Venster herstellen na schermwissel/slaapstand
+- [ ] Automatisch starten met Windows (bestaande OpenDeck-instelling testen)
 - [ ] Installer bouwen en installeren op Alwyns pc
 - [ ] Later: eigen plugins (OBS, apps starten, mediabediening …) in `plugins/`
 
