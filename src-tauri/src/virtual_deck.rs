@@ -301,15 +301,16 @@ pub async fn virtual_deck_set_config(app: AppHandle, new_config: VirtualDeckConf
 
 	let window_changed = old.enabled != new.enabled || old.mode != new.mode || old.monitor != new.monitor || old.always_on_top != new.always_on_top || has_shadow(&old) != has_shadow(&new);
 	if window_changed {
-		if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
-			window.destroy().map_err(anyhow::Error::from)?;
+		// Reconfigure the existing window instead of destroying and recreating it: destroying is processed later by
+		// the event loop, so a new window with the same label failed to build and the deck disappeared.
+		match app.get_webview_window(WINDOW_LABEL) {
+			Some(window) if !new.enabled => window.hide().map_err(anyhow::Error::from)?,
+			Some(window) => reconfigure_window(&app, &window, &new).map_err(anyhow::Error::from)?,
+			None if new.enabled && new.visible => create_window(&app, &new).map_err(anyhow::Error::from)?,
+			None => {}
 		}
-		if new.enabled {
-			create_window(&app, &new).map_err(anyhow::Error::from)?;
-		}
-	} else {
-		emit("virtual_deck_state", state());
 	}
+	emit("virtual_deck_state", state());
 	Ok(())
 }
 
@@ -535,6 +536,21 @@ fn remember_geometry(window: &WebviewWindow) {
 /// shadow would outline the invisible window instead of the keys.
 fn has_shadow(config: &VirtualDeckConfig) -> bool {
 	config.mode == Mode::Floating && config.background_opacity == 100
+}
+
+/// Apply mode, always-on-top and shadow changes to an existing window and move it to its new place.
+fn reconfigure_window(app: &AppHandle, window: &WebviewWindow, config: &VirtualDeckConfig) -> Result<(), tauri::Error> {
+	window.set_resizable(config.mode == Mode::Floating)?;
+	window.set_always_on_top(config.always_on_top)?;
+	window.set_shadow(has_shadow(config))?;
+	PLACING.store(true, Ordering::SeqCst);
+	let placed = place_window(app, window, config);
+	PLACING.store(false, Ordering::SeqCst);
+	placed?;
+	if config.visible {
+		window.show()?;
+	}
+	Ok(())
 }
 
 /// Create the virtual deck window.
