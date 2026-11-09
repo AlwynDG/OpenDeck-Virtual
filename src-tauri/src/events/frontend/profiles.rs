@@ -79,6 +79,7 @@ pub async fn set_selected_profile(device: String, id: String) -> Result<(), Erro
 	store.save()?;
 
 	locks.device_stores.set_selected_profile(&device, id)?;
+	crate::virtual_deck::profile_changed(&device);
 
 	Ok(())
 }

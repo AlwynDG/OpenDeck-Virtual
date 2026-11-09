@@ -1,8 +1,14 @@
 <script lang="ts">
-	// Virtual Stream Deck window: shows only the key grid and forwards presses to the backend.
-	// In floating mode it also has a small drag bar (pin / hide) and a resize grip, like Elgato's Virtual Stream Deck.
+	// Virtual Stream Deck window: draws the keys of the device's selected profile itself and forwards presses to the
+	// backend, so it works without OpenDeck's main window. In floating mode it also has an optional drag bar
+	// (pin / hide) and a resize grip, like Elgato's Virtual Stream Deck.
+	import type { ActionInstance } from "$lib/ActionInstance";
+	import type { Context } from "$lib/Context";
+	import type { Profile } from "$lib/Profile";
+
 	import EyeSlash from "phosphor-svelte/lib/EyeSlash";
 	import PushPin from "phosphor-svelte/lib/PushPin";
+	import VirtualDeckKey from "../../components/VirtualDeckKey.svelte";
 
 	import { invoke } from "@tauri-apps/api/core";
 	import { listen } from "@tauri-apps/api/event";
@@ -18,7 +24,7 @@
 		background_opacity: number;
 		toolbar: "always" | "hover" | "never";
 		sleeping: boolean;
-		images: Record<string, string>;
+		device: string;
 	};
 
 	// Keep in sync with TOOLBAR_HEIGHT in src-tauri/src/virtual_deck.rs.
@@ -33,16 +39,40 @@
 	let hovering = false;
 	let toolbar: "always" | "hover" | "never" = "never";
 	let sleeping = false;
-	let images: Record<number, string> = {};
+	let device = "";
+	let profile: Profile | null = null;
+	let profileJson = "";
+	/// Pressed state reported by the backend, used by the renderer.
+	let moved: Record<number, boolean> = {};
 	let pressed: Record<number, boolean> = {};
 	let width = 0;
 	let height = 0;
+	let keyArea: HTMLDivElement;
 
 	$: showToolbar = floating && toolbar != "never";
 	$: keySize = rows && columns ? Math.max(0, Math.floor(Math.min((width - gap * (columns + 1)) / columns, (height - gap * (rows + 1)) / rows))) : 0;
 
-	function toImages(record: Record<string, string>): Record<number, string> {
-		return Object.fromEntries(Object.entries(record).map(([k, v]) => [Number(k), v]));
+	async function loadProfile() {
+		if (!device) return;
+		try {
+			const loaded = await invoke<Profile>("get_selected_profile", { device });
+			const json = JSON.stringify(loaded);
+			if (json == profileJson) return;
+			profileJson = json;
+			if (profile?.id != loaded.id) moved = {};
+			profile = loaded;
+		} catch {
+			// The device is not registered yet; the next poll or profile event retries.
+		}
+	}
+
+	function updateSlot(context: string, contents: ActionInstance | null) {
+		if (!profile) return;
+		const index = profile.keys.findIndex((slot) => slot?.context == context);
+		if (index == -1) return;
+		profile.keys[index] = contents;
+		profile = profile;
+		profileJson = JSON.stringify(profile);
 	}
 
 	function applyState(state: VirtualDeckState) {
@@ -54,6 +84,7 @@
 		backgroundOpacity = state.background_opacity;
 		toolbar = state.toolbar;
 		sleeping = state.sleeping;
+		device = state.device;
 	}
 
 	onMount(() => {
@@ -61,23 +92,42 @@
 		document.body.style.background = "transparent";
 
 		const unlisteners = [
-			listen<{ position: number; image: string | null }>("virtual_deck_image", ({ payload }) => {
-				if (payload.image) images[payload.position] = payload.image;
-				else delete images[payload.position];
-				images = images;
-			}),
-			listen<Record<string, string>>("virtual_deck_images", ({ payload }) => (images = toImages(payload))),
 			listen<boolean>("virtual_deck_sleeping", ({ payload }) => (sleeping = payload)),
 			listen<VirtualDeckState>("virtual_deck_state", ({ payload }) => applyState(payload)),
+			listen("virtual_deck_profile", () => loadProfile()),
+			listen<{ context: string; contents: ActionInstance | null }>("update_state", ({ payload }) => updateSlot(payload.context, payload.contents)),
+			listen<{ context: Context; pressed: boolean }>("key_moved", ({ payload }) => {
+				const { context } = payload;
+				if (context.device != device || context.controller != "Keypad" || context.profile != profile?.id) return;
+				moved[context.position] = payload.pressed;
+				moved = moved;
+			}),
+			// Profile switches requested by plugins / actions go to the main window, which may be closed; apply them here
+			// too (switching to the already selected profile is a no-op).
+			listen<{ device: string; profile: string }>("switch_profile", ({ payload }) => {
+				if (payload.device == device) invoke("set_selected_profile", { device, id: payload.profile }).catch(() => {});
+			}),
 		];
 
 		invoke<VirtualDeckState>("virtual_deck_get_state").then((state) => {
 			applyState(state);
-			// Images that arrived while we were loading are newer than the snapshot.
-			images = { ...toImages(state.images), ...images };
+			loadProfile();
 		});
+		// Pick up edits made in the main window (adding, moving or removing actions).
+		const poll = setInterval(loadProfile, 1500);
+		// bind:client* uses a ResizeObserver, which WebKitGTK does not run for a window it considers hidden (e.g. never
+		// focused). Measure on a timer as well so the keys always get a size.
+		const measure = setInterval(() => {
+			if (!keyArea) return;
+			if (keyArea.clientWidth != width) width = keyArea.clientWidth;
+			if (keyArea.clientHeight != height) height = keyArea.clientHeight;
+		}, 500);
 
-		return () => unlisteners.forEach((p) => p.then((unlisten) => unlisten()));
+		return () => {
+			clearInterval(poll);
+			clearInterval(measure);
+			unlisteners.forEach((p) => p.then((unlisten) => unlisten()));
+		};
 	});
 
 	async function press(position: number, down: boolean) {
@@ -149,6 +199,7 @@
 	<!-- Measured with a ResizeObserver (bind:client*): the window size at load can be 0 before the webview is laid out. -->
 	<div
 		class="relative grow min-h-0 flex items-center justify-center"
+		bind:this={keyArea}
 		bind:clientWidth={width}
 		bind:clientHeight={height}
 		on:pointerdown={(event) => floating && startDrag(event)}
@@ -166,9 +217,7 @@
 					on:pointercancel={() => press(i, false)}
 					on:lostpointercapture={() => press(i, false)}
 				>
-					{#if images[i]}
-						<img src={images[i]} alt="" draggable="false" class="w-full h-full pointer-events-none" />
-					{/if}
+					<VirtualDeckKey slot={profile?.keys[i] ?? null} pressed={!!moved[i]} />
 				</button>
 			{/each}
 		</div>

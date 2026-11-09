@@ -1,8 +1,7 @@
 //! Virtual Stream Deck: an on-screen window that acts as a regular OpenDeck device.
 //!
-//! The device is registered like a hardware Stream Deck (with the `vd-` namespace). Key images rendered by the
-//! main window are routed here by `events::outbound::devices` instead of being sent to USB hardware, and presses
-//! in the virtual deck window are forwarded to the normal key down / key up handlers.
+//! The device is registered like a hardware Stream Deck (with the `vd-` namespace). The deck window renders its keys
+//! itself from the selected profile and forwards presses to the normal key down / key up handlers.
 //!
 //! Two window modes:
 //! - `floating`: a small borderless window you can drag and resize anywhere, like Elgato's Virtual Stream Deck.
@@ -10,14 +9,12 @@
 //! - `monitor`: fills a whole monitor (by default the rightmost portrait monitor).
 
 use crate::events::inbound::{PayloadEvent, devices::PressPayload};
-use crate::shared::{Context, DeviceInfo, config_dir};
+use crate::shared::{DeviceInfo, config_dir};
 
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{LazyLock, Mutex, RwLock};
+use std::sync::{LazyLock, RwLock};
 use std::time::Duration;
 
-use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, Monitor, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
 
@@ -152,6 +149,7 @@ fn config() -> VirtualDeckConfig {
 }
 
 /// Whether OpenDeck's main window should start hidden in the tray. Call after `APP_HANDLE` is set.
+#[cfg_attr(not(windows), allow(dead_code))]
 pub fn start_in_tray() -> bool {
 	let config = config();
 	config.enabled && config.start_in_tray
@@ -162,22 +160,13 @@ pub fn is_virtual(device: &str) -> bool {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Images
+// Rendering
 // ---------------------------------------------------------------------------------------------------------------
+//
+// The deck window draws its own keys from the device's selected profile (same renderer as the main window), so it
+// does not depend on OpenDeck's main window being open. The backend only tells it when to reload the profile.
 
-/// Last image per (profile, key position). Kept for every profile so switching back to a profile shows its keys
-/// immediately instead of a black frame while the main window re-renders them.
-static IMAGES: LazyLock<DashMap<(String, u8), String>> = LazyLock::new(DashMap::new);
-/// The profile whose images the window currently shows.
-static SHOWN_PROFILE: Mutex<String> = Mutex::new(String::new());
-/// Bumped on every image update, so a delayed clear can tell whether new images arrived in the meantime.
-static IMAGE_GENERATION: AtomicU64 = AtomicU64::new(0);
 static SLEEPING: AtomicBool = AtomicBool::new(false);
-
-fn shown_images() -> HashMap<u8, String> {
-	let profile = SHOWN_PROFILE.lock().unwrap().clone();
-	IMAGES.iter().filter(|entry| entry.key().0 == profile).map(|entry| (entry.key().1, entry.value().clone())).collect()
-}
 
 fn emit<S: Serialize + Clone>(event: &str, payload: S) {
 	if let Some(app) = crate::APP_HANDLE.get() {
@@ -185,61 +174,11 @@ fn emit<S: Serialize + Clone>(event: &str, payload: S) {
 	}
 }
 
-#[derive(Clone, Serialize)]
-struct ImageEvent {
-	position: u8,
-	image: Option<String>,
-}
-
-pub fn update_image(context: &Context, image: Option<&str>) {
-	if context.controller != "Keypad" {
-		return;
+/// Called by `set_selected_profile` after a device switched profiles.
+pub fn profile_changed(device: &str) {
+	if is_virtual(device) {
+		emit("virtual_deck_profile", ());
 	}
-	IMAGE_GENERATION.fetch_add(1, Ordering::SeqCst);
-
-	let key = (context.profile.clone(), context.position);
-	match image {
-		Some(image) => {
-			IMAGES.insert(key, image.to_owned());
-		}
-		None => {
-			IMAGES.remove(&key);
-		}
-	}
-
-	let profile_changed = {
-		let mut shown = SHOWN_PROFILE.lock().unwrap();
-		if *shown != context.profile {
-			*shown = context.profile.clone();
-			true
-		} else {
-			false
-		}
-	};
-	if profile_changed {
-		// Replace the whole grid at once with what we remember of the new profile.
-		emit("virtual_deck_images", shown_images());
-	} else {
-		emit(
-			"virtual_deck_image",
-			ImageEvent {
-				position: context.position,
-				image: image.map(str::to_owned),
-			},
-		);
-	}
-}
-
-pub fn clear_screen() {
-	// OpenDeck clears the screen right before switching profiles. Wait a moment: if images of the new profile arrive
-	// first, the grid is swapped in one go by `update_image` and nothing needs to be cleared.
-	let generation = IMAGE_GENERATION.load(Ordering::SeqCst);
-	tauri::async_runtime::spawn(async move {
-		tokio::time::sleep(Duration::from_millis(300)).await;
-		if IMAGE_GENERATION.load(Ordering::SeqCst) == generation {
-			emit("virtual_deck_images", HashMap::<u8, String>::new());
-		}
-	});
 }
 
 /// Brightness 0 means the device is asleep (see `device_sleep`); the window then goes dark until the next press.
@@ -263,7 +202,7 @@ pub struct VirtualDeckState {
 	background_opacity: u8,
 	toolbar: Toolbar,
 	sleeping: bool,
-	images: HashMap<u8, String>,
+	device: &'static str,
 }
 
 fn state() -> VirtualDeckState {
@@ -277,12 +216,13 @@ fn state() -> VirtualDeckState {
 		background_opacity: config.background_opacity,
 		toolbar: config.toolbar,
 		sleeping: SLEEPING.load(Ordering::SeqCst),
-		images: shown_images(),
+		device: DEVICE_ID,
 	}
 }
 
 #[tauri::command]
 pub fn virtual_deck_get_state() -> VirtualDeckState {
+	log::debug!("Virtual deck window loaded");
 	state()
 }
 
@@ -454,8 +394,6 @@ async fn deregister() {
 	if let Err(error) = crate::events::inbound::devices::deregister_device("", PayloadEvent { payload: DEVICE_ID.to_owned() }).await {
 		log::error!("Failed to deregister virtual deck: {error}");
 	}
-	IMAGES.clear();
-	SHOWN_PROFILE.lock().unwrap().clear();
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -472,6 +410,14 @@ pub fn init(app: &AppHandle) {
 		&& let Err(error) = create_window(app, &config)
 	{
 		log::error!("Failed to create virtual deck window: {error}");
+	}
+	// On Windows the main window starts invisible and main.rs simply does not show it. Elsewhere it starts visible;
+	// hide it only now, after the deck window exists (hiding it first left the deck window blank on Linux/GTK).
+	#[cfg(not(windows))]
+	if config.start_in_tray
+		&& let Some(main) = app.get_webview_window("main")
+	{
+		let _ = main.hide();
 	}
 	tauri::async_runtime::spawn(async move { register(&config).await });
 	tauri::async_runtime::spawn(watch_monitors());
@@ -600,7 +546,9 @@ fn create_window(app: &AppHandle, config: &VirtualDeckConfig) -> Result<(), taur
 		.resizable(floating)
 		.skip_taskbar(true)
 		.always_on_top(config.always_on_top)
-		.transparent(true)
+		// WebKitGTK stops repainting transparent windows here (the deck stayed blank), so Linux gets a black background.
+		.transparent(!cfg!(target_os = "linux"))
+		.background_color(tauri::window::Color(0, 0, 0, if cfg!(target_os = "linux") { 255 } else { 0 }))
 		.shadow(has_shadow(config))
 		.min_inner_size(120.0, 120.0)
 		// Clicking the deck must not steal focus from the app that hotkeys / actions are aimed at.

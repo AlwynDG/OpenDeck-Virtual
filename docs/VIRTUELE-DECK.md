@@ -17,6 +17,18 @@ Alle bestaande OpenDeck-functies (profielen, multi-actions, Elgato-plugins, OBS-
   naar `elgato::update_image`. **Hier moet de virtuele deck aanhaken**: beelden naar ons venster sturen i.p.v. naar USB.
 - Het hoofdvenster heet `"main"` (`tauri.conf.json`); de editor (`DeviceView.svelte`, `Key.svelte`) tekent het grid al.
 
+## Hoe de deck zijn knoppen tekent (update)
+
+De deck-pagina tekent zijn knoppen **zelf** uit het geselecteerde profiel van `vd-virtual-1`, met dezelfde renderer
+als het hoofdvenster (`renderImage` uit `src/lib/rendererHelper.ts`, in `src/components/VirtualDeckKey.svelte`).
+Daardoor werkt de deck ook als het OpenDeck-venster dicht is of in de tray zit. Hij luistert naar `update_state`,
+`key_moved`, `show_ok`/`show_alert` en `switch_profile`, en de backend meldt profielwissels met `virtual_deck_profile`
+(één regel in `set_selected_profile`). Wijzigingen in de editor (acties toevoegen/verplaatsen) worden elke 1,5 s opgehaald.
+Onderstaande beschrijving van "beelden doorsturen via `update_image`" is daarmee vervangen.
+
+Linux-noot (alleen voor testen bij Jeremy): daar is de achtergrond altijd zwart, omdat WebKitGTK een doorzichtig
+venster niet ververst (de deck bleef leeg). Op Windows (WebView2) werkt doorzichtig gewoon.
+
 ## Gekozen aanpak: ingebouwd in de fork
 
 Twee opties overwogen:

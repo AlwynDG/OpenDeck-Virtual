@@ -123,7 +123,7 @@ async fn main() {
 				let _ = app.get_webview_window("main").unwrap().show();
 			}
 			#[cfg(not(windows))]
-			if std::env::args().any(|v| v == "--hide") || virtual_deck::start_in_tray() {
+			if std::env::args().any(|v| v == "--hide") {
 				let _ = hide_window(app.handle());
 			}
 
