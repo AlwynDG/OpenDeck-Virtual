@@ -21,6 +21,7 @@
 		gap: number;
 		mode: "floating" | "monitor";
 		always_on_top: boolean;
+		locked: boolean;
 		background_opacity: number;
 		sleeping: boolean;
 		device: string;
@@ -30,6 +31,7 @@
 	let columns = 0;
 	let gap = 16;
 	let floating = false;
+	let locked = false;
 	let backgroundOpacity = 0;
 	let hovering = false;
 	let sleeping = false;
@@ -43,6 +45,8 @@
 	let height = 0;
 	let keyArea: HTMLDivElement;
 
+	// A locked floating deck stays where it is: no dragging by the gaps, no resize edges.
+	$: movable = floating && !locked;
 	$: keySize = rows && columns ? Math.max(0, Math.floor(Math.min((width - gap * (columns + 1)) / columns, (height - gap * (rows + 1)) / rows))) : 0;
 
 	async function loadProfile() {
@@ -73,6 +77,7 @@
 		columns = state.columns;
 		gap = state.gap;
 		floating = state.mode == "floating";
+		locked = state.locked;
 		backgroundOpacity = state.background_opacity;
 		sleeping = state.sleeping;
 		device = state.device;
@@ -190,7 +195,7 @@
 		bind:this={keyArea}
 		bind:clientWidth={width}
 		bind:clientHeight={height}
-		on:pointerdown={(event) => floating && startDrag(event)}
+		on:pointerdown={(event) => movable && startDrag(event)}
 	>
 		<div class="grid" style={`grid-template-columns: repeat(${columns}, ${keySize}px); gap: ${gap}px;`}>
 			{#each { length: rows * columns } as _, i}
@@ -215,7 +220,7 @@
 			<div class="absolute inset-0 bg-black/90 rounded-lg pointer-events-none"></div>
 		{/if}
 
-		{#if floating}
+		{#if movable}
 			<!-- svelte-ignore a11y-no-static-element-interactions -->
 			<div
 				class="absolute right-0 bottom-0 w-4 h-4 cursor-se-resize transition-opacity duration-150"
@@ -227,7 +232,7 @@
 		{/if}
 	</div>
 
-	{#if floating}
+	{#if movable}
 		{#each resizeHandles as handle (handle.direction)}
 			<!-- svelte-ignore a11y-no-static-element-interactions -->
 			<div

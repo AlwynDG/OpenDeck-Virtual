@@ -14,6 +14,7 @@
 		gap: number;
 		monitor: string | null;
 		always_on_top: boolean;
+		locked: boolean;
 		floating: Geometry | null;
 		visible: boolean;
 		background_opacity: number;
@@ -120,7 +121,15 @@
 					<span class="text-neutral-400 w-24">{config.background_opacity == 0 ? "transparent" : `${config.background_opacity}%`}</span>
 				</div>
 
-				<p class="-mt-1 mb-2 text-xs text-neutral-500">Move the deck by dragging the space between the keys; resize it by dragging its edges.</p>
+				<div class="flex flex-row items-center my-2 space-x-2">
+					<label for="vd-locked" class="text-neutral-400">Lock position and size</label>
+					<input type="checkbox" bind:checked={config.locked} id="vd-locked" />
+				</div>
+				<p class="-mt-1 mb-2 text-xs text-neutral-500">
+					{config.locked
+						? "The deck stays where it is. Untick this to move or resize it again."
+						: "Move the deck by dragging the space between the keys; resize it by dragging its edges."}
+				</p>
 			{/if}
 
 			<div class="flex flex-row items-center my-2 space-x-2">

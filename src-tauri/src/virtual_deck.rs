@@ -56,6 +56,8 @@ pub struct VirtualDeckConfig {
 	/// is used, falling back to the rightmost monitor.
 	pub monitor: Option<String>,
 	pub always_on_top: bool,
+	/// Floating mode: the window can't be moved or resized, so clicks between the keys don't drag it by accident.
+	pub locked: bool,
 	/// Remembered geometry of the floating window.
 	pub floating: Option<Geometry>,
 	/// Whether the window is shown. Toggled from the tray menu.
@@ -76,6 +78,7 @@ impl Default for VirtualDeckConfig {
 			gap: 16,
 			monitor: None,
 			always_on_top: true,
+			locked: false,
 			floating: None,
 			visible: true,
 			background_opacity: 0,
@@ -187,6 +190,7 @@ pub struct VirtualDeckState {
 	gap: u16,
 	mode: Mode,
 	always_on_top: bool,
+	locked: bool,
 	background_opacity: u8,
 	sleeping: bool,
 	device: &'static str,
@@ -200,6 +204,7 @@ fn state() -> VirtualDeckState {
 		gap: config.gap,
 		mode: config.mode,
 		always_on_top: config.always_on_top,
+		locked: config.locked,
 		background_opacity: config.background_opacity,
 		sleeping: SLEEPING.load(Ordering::SeqCst),
 		device: DEVICE_ID,
@@ -285,7 +290,8 @@ pub async fn virtual_deck_set_config(app: AppHandle, new_config: VirtualDeckConf
 		register(&new).await;
 	}
 
-	let window_changed = old.enabled != new.enabled || old.mode != new.mode || old.monitor != new.monitor || old.always_on_top != new.always_on_top || has_shadow(&old) != has_shadow(&new);
+	let window_changed =
+		old.enabled != new.enabled || old.mode != new.mode || old.monitor != new.monitor || old.always_on_top != new.always_on_top || old.locked != new.locked || has_shadow(&old) != has_shadow(&new);
 	if window_changed {
 		// Reconfigure the existing window instead of destroying and recreating it: destroying is processed later by
 		// the event loop, so a new window with the same label failed to build and the deck disappeared.
@@ -523,9 +529,14 @@ fn has_shadow(config: &VirtualDeckConfig) -> bool {
 	config.mode == Mode::Floating && config.background_opacity == 100
 }
 
-/// Apply mode, always-on-top and shadow changes to an existing window and move it to its new place.
+/// Only an unlocked floating window can be resized by the user.
+fn is_resizable(config: &VirtualDeckConfig) -> bool {
+	config.mode == Mode::Floating && !config.locked
+}
+
+/// Apply mode, always-on-top, lock and shadow changes to an existing window and move it to its new place.
 fn reconfigure_window(app: &AppHandle, window: &WebviewWindow, config: &VirtualDeckConfig) -> Result<(), tauri::Error> {
-	window.set_resizable(config.mode == Mode::Floating)?;
+	window.set_resizable(is_resizable(config))?;
 	window.set_always_on_top(config.always_on_top)?;
 	window.set_shadow(has_shadow(config))?;
 	PLACING.store(true, Ordering::SeqCst);
@@ -540,11 +551,10 @@ fn reconfigure_window(app: &AppHandle, window: &WebviewWindow, config: &VirtualD
 
 /// Create the virtual deck window.
 fn create_window(app: &AppHandle, config: &VirtualDeckConfig) -> Result<(), tauri::Error> {
-	let floating = config.mode == Mode::Floating;
 	let window = WebviewWindowBuilder::new(app, WINDOW_LABEL, WebviewUrl::App("virtual-deck".into()))
 		.title("Virtual Stream Deck")
 		.decorations(false)
-		.resizable(floating)
+		.resizable(is_resizable(config))
 		.skip_taskbar(true)
 		.always_on_top(config.always_on_top)
 		// WebKitGTK stops repainting transparent windows here (the deck stayed blank), so Linux gets a black background.
