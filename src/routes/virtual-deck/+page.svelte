@@ -1,13 +1,11 @@
 <script lang="ts">
 	// Virtual Stream Deck window: draws the keys of the device's selected profile itself and forwards presses to the
-	// backend, so it works without OpenDeck's main window. In floating mode it also has an optional drag bar
-	// (pin / hide) and a resize grip, like Elgato's Virtual Stream Deck.
+	// backend, so it works without OpenDeck's main window. In floating mode it can be moved by the space between the
+	// keys and resized from its edges.
 	import type { ActionInstance } from "$lib/ActionInstance";
 	import type { Context } from "$lib/Context";
 	import type { Profile } from "$lib/Profile";
 
-	import EyeSlash from "phosphor-svelte/lib/EyeSlash";
-	import PushPin from "phosphor-svelte/lib/PushPin";
 	import VirtualDeckKey from "../../components/VirtualDeckKey.svelte";
 
 	import { initPortBase } from "$lib/ports";
@@ -24,22 +22,16 @@
 		mode: "floating" | "monitor";
 		always_on_top: boolean;
 		background_opacity: number;
-		toolbar: "always" | "hover" | "never";
 		sleeping: boolean;
 		device: string;
 	};
-
-	// Keep in sync with TOOLBAR_HEIGHT in src-tauri/src/virtual_deck.rs.
-	const TOOLBAR_HEIGHT = 28;
 
 	let rows = 0;
 	let columns = 0;
 	let gap = 16;
 	let floating = false;
-	let alwaysOnTop = true;
 	let backgroundOpacity = 0;
 	let hovering = false;
-	let toolbar: "always" | "hover" | "never" = "never";
 	let sleeping = false;
 	let device = "";
 	let profile: Profile | null = null;
@@ -51,7 +43,6 @@
 	let height = 0;
 	let keyArea: HTMLDivElement;
 
-	$: showToolbar = floating && toolbar != "never";
 	$: keySize = rows && columns ? Math.max(0, Math.floor(Math.min((width - gap * (columns + 1)) / columns, (height - gap * (rows + 1)) / rows))) : 0;
 
 	async function loadProfile() {
@@ -82,9 +73,7 @@
 		columns = state.columns;
 		gap = state.gap;
 		floating = state.mode == "floating";
-		alwaysOnTop = state.always_on_top;
 		backgroundOpacity = state.background_opacity;
-		toolbar = state.toolbar;
 		sleeping = state.sleeping;
 		device = state.device;
 	}
@@ -162,10 +151,26 @@
 		getCurrentWindow().startDragging();
 	}
 
-	function startResize(event: PointerEvent) {
+	type ResizeDirection = "North" | "South" | "East" | "West" | "NorthEast" | "NorthWest" | "SouthEast" | "SouthWest";
+
+	function startResize(event: PointerEvent, direction: ResizeDirection = "SouthEast") {
 		if (event.button !== 0) return;
-		getCurrentWindow().startResizeDragging("SouthEast");
+		getCurrentWindow().startResizeDragging(direction);
 	}
+
+	// The window has no frame, so invisible bands along every edge and corner act as its resize border.
+	const EDGE = 6;
+	const CORNER = 12;
+	const resizeHandles: { direction: ResizeDirection; style: string; cursor: string }[] = [
+		{ direction: "North", style: `top: 0; left: ${CORNER}px; right: ${CORNER}px; height: ${EDGE}px;`, cursor: "n-resize" },
+		{ direction: "South", style: `bottom: 0; left: ${CORNER}px; right: ${CORNER}px; height: ${EDGE}px;`, cursor: "s-resize" },
+		{ direction: "West", style: `left: 0; top: ${CORNER}px; bottom: ${CORNER}px; width: ${EDGE}px;`, cursor: "w-resize" },
+		{ direction: "East", style: `right: 0; top: ${CORNER}px; bottom: ${CORNER}px; width: ${EDGE}px;`, cursor: "e-resize" },
+		{ direction: "NorthWest", style: `top: 0; left: 0; width: ${CORNER}px; height: ${CORNER}px;`, cursor: "nw-resize" },
+		{ direction: "NorthEast", style: `top: 0; right: 0; width: ${CORNER}px; height: ${CORNER}px;`, cursor: "ne-resize" },
+		{ direction: "SouthWest", style: `bottom: 0; left: 0; width: ${CORNER}px; height: ${CORNER}px;`, cursor: "sw-resize" },
+		{ direction: "SouthEast", style: `bottom: 0; right: 0; width: ${CORNER}px; height: ${CORNER}px;`, cursor: "se-resize" },
+	];
 </script>
 
 <svelte:window on:contextmenu|preventDefault />
@@ -177,33 +182,6 @@
 	on:pointerenter={() => (hovering = true)}
 	on:pointerleave={() => (hovering = false)}
 >
-	{#if showToolbar}
-		<!-- svelte-ignore a11y-no-static-element-interactions -->
-		<div
-			class="flex flex-row items-center shrink-0 px-2 text-xs text-neutral-400 bg-neutral-950/80 rounded-md cursor-grab active:cursor-grabbing transition-opacity duration-150"
-			class:opacity-0={toolbar == "hover" && !hovering}
-			style={`height: ${TOOLBAR_HEIGHT}px;`}
-			on:pointerdown={startDrag}
-		>
-			<span class="grow truncate">Virtual Stream Deck</span>
-			<button
-				class="p-1 rounded hover:bg-neutral-800 transition-colors"
-				class:text-neutral-200={alwaysOnTop}
-				title={alwaysOnTop ? "Stop keeping on top" : "Keep on top"}
-				on:click={() => invoke("virtual_deck_set_always_on_top", { alwaysOnTop: !alwaysOnTop })}
-			>
-				<PushPin weight={alwaysOnTop ? "fill" : "regular"} />
-			</button>
-			<button
-				class="p-1 rounded hover:bg-neutral-800 transition-colors"
-				title="Hide (show again from the tray icon)"
-				on:click={() => invoke("virtual_deck_set_visible", { visible: false })}
-			>
-				<EyeSlash />
-			</button>
-		</div>
-	{/if}
-
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<!-- Floating: grab the space between the keys to move the window. -->
 	<!-- Measured with a ResizeObserver (bind:client*): the window size at load can be 0 before the webview is laid out. -->
@@ -241,11 +219,22 @@
 			<!-- svelte-ignore a11y-no-static-element-interactions -->
 			<div
 				class="absolute right-0 bottom-0 w-4 h-4 cursor-se-resize transition-opacity duration-150"
-				class:opacity-0={toolbar != "always" && !hovering}
-				on:pointerdown|stopPropagation={startResize}
+				class:opacity-0={!hovering}
+				on:pointerdown|stopPropagation={(event) => startResize(event)}
 			>
 				<svg viewBox="0 0 16 16" class="w-full h-full text-neutral-600"><path d="M14 6 L6 14 M14 10 L10 14" stroke="currentColor" stroke-width="1.5" /></svg>
 			</div>
 		{/if}
 	</div>
+
+	{#if floating}
+		{#each resizeHandles as handle (handle.direction)}
+			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<div
+				class="absolute z-10"
+				style={`${handle.style} cursor: ${handle.cursor};`}
+				on:pointerdown|stopPropagation={(event) => startResize(event, handle.direction)}
+			></div>
+		{/each}
+	{/if}
 </div>

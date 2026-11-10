@@ -22,7 +22,6 @@ pub const DEVICE_ID: &str = "vd-virtual-1";
 pub const WINDOW_LABEL: &str = "virtual-deck";
 
 /// Height of the drag bar shown at the top of the floating window, in CSS pixels. Keep in sync with the frontend.
-const TOOLBAR_HEIGHT: f64 = 28.0;
 /// Default key size of a new floating window, in CSS pixels.
 const DEFAULT_KEY_SIZE: f64 = 88.0;
 
@@ -31,14 +30,6 @@ const DEFAULT_KEY_SIZE: f64 = 88.0;
 pub enum Mode {
 	Floating,
 	Monitor,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Toolbar {
-	Always,
-	Hover,
-	Never,
 }
 
 /// Window position and size in physical pixels.
@@ -67,12 +58,10 @@ pub struct VirtualDeckConfig {
 	pub always_on_top: bool,
 	/// Remembered geometry of the floating window.
 	pub floating: Option<Geometry>,
-	/// Whether the window is shown. Toggled from the tray menu or the window's own hide button.
+	/// Whether the window is shown. Toggled from the tray menu.
 	pub visible: bool,
 	/// Opacity of the window background behind the keys, 0-100. 0 = fully transparent: only the keys float on the desktop.
 	pub background_opacity: u8,
-	/// Drag bar of the floating window. The window can always be dragged by the space between the keys.
-	pub toolbar: Toolbar,
 	/// Start OpenDeck's own window hidden in the tray; the deck is what you use day to day.
 	pub start_in_tray: bool,
 }
@@ -90,7 +79,6 @@ impl Default for VirtualDeckConfig {
 			floating: None,
 			visible: true,
 			background_opacity: 0,
-			toolbar: Toolbar::Never,
 			start_in_tray: true,
 		}
 	}
@@ -200,7 +188,6 @@ pub struct VirtualDeckState {
 	mode: Mode,
 	always_on_top: bool,
 	background_opacity: u8,
-	toolbar: Toolbar,
 	sleeping: bool,
 	device: &'static str,
 }
@@ -214,7 +201,6 @@ fn state() -> VirtualDeckState {
 		mode: config.mode,
 		always_on_top: config.always_on_top,
 		background_opacity: config.background_opacity,
-		toolbar: config.toolbar,
 		sleeping: SLEEPING.load(Ordering::SeqCst),
 		device: DEVICE_ID,
 	}
@@ -460,8 +446,7 @@ fn floating_geometry(app: &AppHandle, config: &VirtualDeckConfig) -> Option<Geom
 	let scale = monitor.scale_factor();
 	let gap = config.gap as f64;
 	let width = config.columns as f64 * DEFAULT_KEY_SIZE + (config.columns as f64 + 1.0) * gap;
-	let toolbar = if config.toolbar == Toolbar::Never { 0.0 } else { TOOLBAR_HEIGHT };
-	let height = config.rows as f64 * DEFAULT_KEY_SIZE + (config.rows as f64 + 1.0) * gap + toolbar;
+	let height = config.rows as f64 * DEFAULT_KEY_SIZE + (config.rows as f64 + 1.0) * gap;
 	// Never larger than 90% of the monitor.
 	let factor = (monitor.size().width as f64 * 0.9 / (width * scale))
 		.min(monitor.size().height as f64 * 0.9 / (height * scale))

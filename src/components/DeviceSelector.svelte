@@ -47,9 +47,13 @@
 	let buildInfo: string;
 	(async () => (buildInfo = await invoke("get_build_info")))();
 	const window = getCurrentWindow();
+	// Only fit the window when the selected device's layout changes, so it can still be resized freely afterwards.
+	let fittedLayout = "";
 
 	$: {
-		if (devices[value]) {
+		const layout = devices[value] ? `${value}:${devices[value].rows}x${devices[value].columns}` : "";
+		if (devices[value] && layout != fittedLayout) {
+			fittedLayout = layout;
 			const effectiveCols = Math.min(Math.max(devices[value].columns, devices[value].encoders, devices[value].touchpoints), 8);
 			const effectiveRows = Math.min(devices[value].rows + Math.min(devices[value].encoders, 1) + Math.min(devices[value].touchpoints, 1), 4);
 			const idealWidth = effectiveCols * 132 + 416;
@@ -57,7 +61,8 @@
 			(async () => {
 				const width = Math.min(idealWidth, screen.availWidth);
 				const height = Math.min(idealHeight, screen.availHeight);
-				await window.setMinSize(new LogicalSize(width, height));
+				// The key grid scrolls, so the window may be smaller than the ideal size (minimum from tauri.conf.json).
+				await window.setMinSize(new LogicalSize(Math.min(width, 800), Math.min(height, 600)));
 				await window.setSize(new LogicalSize(width, height));
 			})();
 		}
