@@ -69,12 +69,22 @@ Blijven ze daarna nog staan: `git add -A`. Bestanden zonder echte wijziging verd
   Claude gestarte OpenDeck: de webserver (poort 57118) geeft **403** op alle plugin-plaatjes en property inspectors
   (canonicalize wijst naar de Packages-map, buiten de config-map). Geen bug in de fork. Ontsnappen uit de afscherming
   (WMI e.d.) wordt terecht geweigerd. Werkwijze: knoppenprofielen, `deck.exe` en plugins staan in `D:\AI\deck-config`
-  (D: wordt niet afgeschermd); Alwyn draait daar zelf `Installeer deck.cmd` en `Start OpenDeck.cmd` vanuit Verkenner.
+  (D: wordt niet afgeschermd); Alwyn draait daar zelf `Installeer deck.cmd` vanuit Verkenner.
+  Ook het register (HKCU) en `%LOCALAPPDATA%` zijn afgeschermd: wat je leest is de privékopie, niet Alwyns echte
+  logs en instellingen. Iets dat buiten de afscherming moet draaien (een dev-build die zijn echte config moet zien,
+  een registerwijziging die Alwyn vroeg) gaat via `run_in_terminal`: dat typt het commando in zijn eigen shell, met
+  zijn goedkeuring.
+- **Dev-build of geïnstalleerde versie?** Sinds 10 nov is de release geïnstalleerd. `Start OpenDeck.cmd` heet nu
+  `Start testversie (alleen voor ontwikkelen).cmd`: het zwarte venster ís de dev-build en sluiten stopt hem. Alwyn
+  verwarde dat met de echte app. Een dev-build zonder draaiende Vite (`tauri dev` gestopt) toont oude code; herladen
+  geeft dan "localhost weigert verbinding".
+- **computer-use** werkt wel met het volledige pad: `request_access` met `D:\...\target\debug\opendeck.exe` of
+  `C:\Users\Alwyn\AppData\Local\opendeck\opendeck.exe`. Verkenner krijgt alleen tier "click" (geen slepen), dus
+  vensterranden slepen en klikken onder het schermtoetsenbord lukt niet.
 
 - **Schermtoetsenbord (osk.exe)**: maakt een topmost "Input Occlusion Window" (explorer.exe) over heel DISPLAY3.
   Daaronder is de deck onzichtbaar en niet klikbaar. Niet zelf sluiten, vraag het Alwyn.
 - **Elgato Stream Deck (`StreamDeck.exe`)** draait nog en registreert ook `streamdeck://`. Bij rare deep-link- of
   sneltoetsproblemen: vraag of hij die wil afsluiten.
-- **computer-use** herkent de dev-build niet (`request_access` → notInstalled). Gebruik de PowerShell-aanpak uit SKILL.md.
 - **Upstream-meldingen**: OpenDeck checkt upstream-releases en meldt "new version available". Dat gaat over
   nekename/OpenDeck, niet over deze fork. Niet zomaar updaten: mergen gaat via `git merge upstream/main` op een branch.

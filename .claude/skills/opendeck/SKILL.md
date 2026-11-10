@@ -98,14 +98,21 @@ In `src-tauri/`: `cargo clippy` en `cargo fmt`. In de root: `deno task check`, `
 Alle vijf moeten schoon zijn.
 
 ### Testen op Alwyns schermen
-- **computer-use werkt niet** met de dev-build: `request_access` vindt "opendeck" niet. Kijk met PowerShell:
+- **computer-use** werkt alleen met het volledige exe-pad in `request_access` (de naam "OpenDeck" wordt niet
+  gevonden): `D:\AI\OpenDeck-Virtual\src-tauri\target\debug\opendeck.exe` (dev) of
+  `C:\Users\Alwyn\AppData\Local\opendeck\opendeck.exe` (geïnstalleerd). Daarmee kun je in Settings klikken, knoppen
+  slepen en op de deck drukken. Alwyn test knoppen liever zelf: vraag eerst of hij wil dat je meekijkt.
+  Zonder computer-use, met PowerShell:
   - DPI-aware maken (`SetProcessDpiAwarenessContext(-4)`), anders kloppen coördinaten niet.
   - `EnumWindows` + `GetWindowRect` voor de vensters, `WindowFromPoint` voor wat er bovenop ligt.
   - `Graphics.CopyFromScreen` voor een screenshot. DISPLAY3 = `CopyFromScreen(3440,-251, …)` met 1080×1920.
   - Pixels tellen (`GetPixel`) is betrouwbaarder dan een verkleinde screenshot: lege knoppen zijn rgb ~(23,23,23)
     op zwart en vallen in een verkleind plaatje weg.
-- Klikken in de Settings en knoppen toewijzen in het hoofdvenster kun je niet zelf. Vraag Alwyn het te doen en te
-  vertellen wat hij ziet.
+
+### Knoppen en pagina's voor Alwyn
+Niet met de hand in OpenDeck klikken: pas `D:\AI\deck-config\build-menus.ps1` aan, draai het, maak een voorbeeldplaatje
+van de profielen (`profiles\*.json`, plaatjes zitten als data-URL in `image_override`) en laat Alwyn
+`Installeer deck.cmd` dubbelklikken. Zie "Knoppen van Alwyn" in `references/stand-van-zaken.md`.
 
 ### Jeremy's PR reviewen
 1. `gh pr list --repo AlwynDG/OpenDeck-Virtual` en `gh pr view <n> --json body,commits,files`.
