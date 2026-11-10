@@ -33,7 +33,6 @@
 	let floating = false;
 	let locked = false;
 	let backgroundOpacity = 0;
-	let hovering = false;
 	let sleeping = false;
 	let device = "";
 	let profile: Profile | null = null;
@@ -47,7 +46,14 @@
 
 	// A locked floating deck stays where it is: no dragging by the gaps, no resize edges.
 	$: movable = floating && !locked;
-	$: keySize = rows && columns ? Math.max(0, Math.floor(Math.min((width - gap * (columns + 1)) / columns, (height - gap * (rows + 1)) / rows))) : 0;
+	// The window has no frame, so invisible bands along every edge and corner act as its resize border. While the
+	// deck can be resized, the outer margin is at least that wide so the bands never cover a key.
+	const EDGE = 8;
+	$: margin = movable ? Math.max(gap, EDGE) : gap;
+	$: keySize =
+		rows && columns
+			? Math.max(0, Math.floor(Math.min((width - gap * (columns - 1) - 2 * margin) / columns, (height - gap * (rows - 1) - 2 * margin) / rows)))
+			: 0;
 
 	async function loadProfile() {
 		if (!device) return;
@@ -158,23 +164,20 @@
 
 	type ResizeDirection = "North" | "South" | "East" | "West" | "NorthEast" | "NorthWest" | "SouthEast" | "SouthWest";
 
-	function startResize(event: PointerEvent, direction: ResizeDirection = "SouthEast") {
+	function startResize(event: PointerEvent, direction: ResizeDirection) {
 		if (event.button !== 0) return;
 		getCurrentWindow().startResizeDragging(direction);
 	}
 
-	// The window has no frame, so invisible bands along every edge and corner act as its resize border.
-	const EDGE = 6;
-	const CORNER = 12;
 	const resizeHandles: { direction: ResizeDirection; style: string; cursor: string }[] = [
-		{ direction: "North", style: `top: 0; left: ${CORNER}px; right: ${CORNER}px; height: ${EDGE}px;`, cursor: "n-resize" },
-		{ direction: "South", style: `bottom: 0; left: ${CORNER}px; right: ${CORNER}px; height: ${EDGE}px;`, cursor: "s-resize" },
-		{ direction: "West", style: `left: 0; top: ${CORNER}px; bottom: ${CORNER}px; width: ${EDGE}px;`, cursor: "w-resize" },
-		{ direction: "East", style: `right: 0; top: ${CORNER}px; bottom: ${CORNER}px; width: ${EDGE}px;`, cursor: "e-resize" },
-		{ direction: "NorthWest", style: `top: 0; left: 0; width: ${CORNER}px; height: ${CORNER}px;`, cursor: "nw-resize" },
-		{ direction: "NorthEast", style: `top: 0; right: 0; width: ${CORNER}px; height: ${CORNER}px;`, cursor: "ne-resize" },
-		{ direction: "SouthWest", style: `bottom: 0; left: 0; width: ${CORNER}px; height: ${CORNER}px;`, cursor: "sw-resize" },
-		{ direction: "SouthEast", style: `bottom: 0; right: 0; width: ${CORNER}px; height: ${CORNER}px;`, cursor: "se-resize" },
+		{ direction: "North", style: `top: 0; left: ${EDGE}px; right: ${EDGE}px; height: ${EDGE}px;`, cursor: "n-resize" },
+		{ direction: "South", style: `bottom: 0; left: ${EDGE}px; right: ${EDGE}px; height: ${EDGE}px;`, cursor: "s-resize" },
+		{ direction: "West", style: `left: 0; top: ${EDGE}px; bottom: ${EDGE}px; width: ${EDGE}px;`, cursor: "w-resize" },
+		{ direction: "East", style: `right: 0; top: ${EDGE}px; bottom: ${EDGE}px; width: ${EDGE}px;`, cursor: "e-resize" },
+		{ direction: "NorthWest", style: `top: 0; left: 0; width: ${EDGE}px; height: ${EDGE}px;`, cursor: "nw-resize" },
+		{ direction: "NorthEast", style: `top: 0; right: 0; width: ${EDGE}px; height: ${EDGE}px;`, cursor: "ne-resize" },
+		{ direction: "SouthWest", style: `bottom: 0; left: 0; width: ${EDGE}px; height: ${EDGE}px;`, cursor: "sw-resize" },
+		{ direction: "SouthEast", style: `bottom: 0; right: 0; width: ${EDGE}px; height: ${EDGE}px;`, cursor: "se-resize" },
 	];
 </script>
 
@@ -184,8 +187,6 @@
 <div
 	class="fixed inset-0 flex flex-col select-none overflow-hidden"
 	style={`touch-action: none; background: rgb(0 0 0 / ${floating ? backgroundOpacity : 100}%);`}
-	on:pointerenter={() => (hovering = true)}
-	on:pointerleave={() => (hovering = false)}
 >
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<!-- Floating: grab the space between the keys to move the window. -->
@@ -218,17 +219,6 @@
 		{#if sleeping}
 			<!-- Asleep (see the sleep settings): dark until the next press, which only wakes the deck. -->
 			<div class="absolute inset-0 bg-black/90 rounded-lg pointer-events-none"></div>
-		{/if}
-
-		{#if movable}
-			<!-- svelte-ignore a11y-no-static-element-interactions -->
-			<div
-				class="absolute right-0 bottom-0 w-4 h-4 cursor-se-resize transition-opacity duration-150"
-				class:opacity-0={!hovering}
-				on:pointerdown|stopPropagation={(event) => startResize(event)}
-			>
-				<svg viewBox="0 0 16 16" class="w-full h-full text-neutral-600"><path d="M14 6 L6 14 M14 10 L10 14" stroke="currentColor" stroke-width="1.5" /></svg>
-			</div>
 		{/if}
 	</div>
 

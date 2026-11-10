@@ -51,7 +51,8 @@
 	let fittedLayout = "";
 
 	$: {
-		const layout = devices[value] ? `${value}:${devices[value].rows}x${devices[value].columns}` : "";
+		// buildInfo is part of the key because it changes the ideal height on macOS and may arrive after the devices.
+		const layout = devices[value] ? `${value}:${devices[value].rows}x${devices[value].columns}:${buildInfo ? "info" : ""}` : "";
 		if (devices[value] && layout != fittedLayout) {
 			fittedLayout = layout;
 			const effectiveCols = Math.min(Math.max(devices[value].columns, devices[value].encoders, devices[value].touchpoints), 8);

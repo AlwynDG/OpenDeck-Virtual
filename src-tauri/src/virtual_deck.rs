@@ -21,7 +21,6 @@ use tauri::{AppHandle, Emitter, LogicalSize, Manager, Monitor, PhysicalPosition,
 pub const DEVICE_ID: &str = "vd-virtual-1";
 pub const WINDOW_LABEL: &str = "virtual-deck";
 
-/// Height of the drag bar shown at the top of the floating window, in CSS pixels. Keep in sync with the frontend.
 /// Default key size of a new floating window, in CSS pixels.
 const DEFAULT_KEY_SIZE: f64 = 88.0;
 
@@ -331,21 +330,6 @@ fn set_visible(app: &AppHandle, visible: bool) -> Result<(), tauri::Error> {
 		None if visible => create_window(app, &config)?,
 		None => {}
 	}
-	Ok(())
-}
-
-#[tauri::command]
-pub fn virtual_deck_set_always_on_top(app: AppHandle, always_on_top: bool) -> Result<(), crate::events::frontend::Error> {
-	let config = {
-		let mut config = CONFIG.write().unwrap();
-		config.always_on_top = always_on_top;
-		config.clone()
-	};
-	save_config(&config);
-	if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
-		window.set_always_on_top(always_on_top).map_err(anyhow::Error::from)?;
-	}
-	emit("virtual_deck_state", state());
 	Ok(())
 }
 

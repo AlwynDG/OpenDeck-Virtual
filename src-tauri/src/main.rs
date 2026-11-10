@@ -113,7 +113,6 @@ async fn main() {
 			virtual_deck::virtual_deck_set_config,
 			virtual_deck::virtual_deck_list_monitors,
 			virtual_deck::virtual_deck_set_visible,
-			virtual_deck::virtual_deck_set_always_on_top,
 		])
 		.setup(|app| {
 			APP_HANDLE.set(app.handle().clone()).unwrap();
