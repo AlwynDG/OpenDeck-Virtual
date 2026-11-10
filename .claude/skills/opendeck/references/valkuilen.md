@@ -62,6 +62,15 @@ Blijven ze daarna nog staan: `git add -A`. Bestanden zonder echte wijziging verd
 
 ## Omgeving bij Alwyn
 
+- **De Claude-app schermt `%APPDATA%` af (9 nov 2026 ontdekt).** Alles wat je vanuit een Claude-sessie in
+  `%APPDATA%` schrijft, en alles wat een daar gestarte OpenDeck schrijft, komt in
+  `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\opendeck` terecht. Binnen de sessie lijkt het
+  gewoon in `%APPDATA%\opendeck` te staan; een OpenDeck die Alwyn zelf start ziet het niet. Gevolg in de door
+  Claude gestarte OpenDeck: de webserver (poort 57118) geeft **403** op alle plugin-plaatjes en property inspectors
+  (canonicalize wijst naar de Packages-map, buiten de config-map). Geen bug in de fork. Ontsnappen uit de afscherming
+  (WMI e.d.) wordt terecht geweigerd. Werkwijze: knoppenprofielen, `deck.exe` en plugins staan in `D:\AI\deck-config`
+  (D: wordt niet afgeschermd); Alwyn draait daar zelf `Installeer deck.cmd` en `Start OpenDeck.cmd` vanuit Verkenner.
+
 - **Schermtoetsenbord (osk.exe)**: maakt een topmost "Input Occlusion Window" (explorer.exe) over heel DISPLAY3.
   Daaronder is de deck onzichtbaar en niet klikbaar. Niet zelf sluiten, vraag het Alwyn.
 - **Elgato Stream Deck (`StreamDeck.exe`)** draait nog en registreert ook `streamdeck://`. Bij rare deep-link- of
